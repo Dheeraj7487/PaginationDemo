@@ -10,19 +10,29 @@ class ApiData extends ChangeNotifier {
 
   final url = 'https://jsonplaceholder.typicode.com/posts';
   int page = 1;
-  int limit = 10;
+  int limit = 5;
   List posts = [];
-  List fetchPostData = [];
+  List fetchApiData = [];
+  bool isLoadMoreRunning = false;
+  ScrollController controller = ScrollController();
 
   getData() async {
     try {
-      var response = await Http.get(Uri.parse("https://jsonplaceholder.typicode.com/posts?_page=$page&_limit=$limit"));
-      print("https://jsonplaceholder.typicode.com/posts?_page=$page&_limit=$limit");
+      var response = await Http.get(Uri.parse("https://jsonplaceholder.typicode.com/posts?_page=$page"));
       if(response.statusCode == 200){
         DatabaseHelper.db.deletepost();
-        posts = json.decode(response.body);
-        postsFromJson(response.body).map((posts) {DatabaseHelper.db.insert(posts);}).toList();
+        fetchApiData = json.decode(response.body);
+
+        if(controller.position.extentAfter < 300){
+          posts.addAll(fetchApiData);
+          isLoadMoreRunning = true;
+          loadPage();
+          postsFromJson(response.body).map((posts) {DatabaseHelper.db.insert(posts);}).toList();
+          notifyListeners();
+        }
+        isLoadMoreRunning = false;
         print(posts.length);
+        notifyListeners();
       }
       else{
         print("Something wrong");
@@ -44,13 +54,8 @@ class ApiData extends ChangeNotifier {
     }
   }
 
-  loadePage() async {
+  loadPage(){
     page++;
-    // var response = await Http.get(Uri.parse("https://jsonplaceholder.typicode.com/posts?_page=$page&_limit=$limit"));
-    // print("https://jsonplaceholder.typicode.com/posts?_page=$page&_limit=$limit");
-    // fetchPostData = json.decode(response.body);
-    // posts.addAll(fetchPostData);
   }
 
 }
-
